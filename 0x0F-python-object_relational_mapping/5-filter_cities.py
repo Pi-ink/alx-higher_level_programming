@@ -1,23 +1,40 @@
 #!/usr/bin/python3
-"""Module that retrieves and prints all\
-        states from a MySQL database using SQLAlchemy."""
-import sys
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
-from model_state import State
+"""
+This script  takes in the name of a state
+as an argument and lists all cities of that
+state, using the database `hbtn_0e_4_usa`.
+"""
+
+import MySQLdb as db
+from sys import argv
 
 if __name__ == "__main__":
-    # Create the SQLAlchemy engine using the provided MySQL credentials
-    engine = create_engine("mysql+mysqldb://{}:{}@localhost/{}"
-                           .format(sys.argv[1], sys.argv[2], sys.argv[3]),
-                           pool_pre_ping=True)
-    # Create a session factory
-    Session = sessionmaker(bind=engine)
+    """
+    Access to the database and get the cities
+    from the database.
+    """
 
-    # Create a session object
-    session = Session()
+    db_connect = db.connect(host="localhost", port=3306,
+                            user=argv[1], passwd=argv[2], db=argv[3])
 
-    # Retrieve all states from the database and print their IDs and names
-    for state in session.query(State).order_by(State.id):
-        print("{}: {}".format(state.id, state.name))
+    with db_connect.cursor() as db_cursor:
+        db_cursor.execute("""
+            SELECT
+                cities.id, cities.name
+            FROM
+                cities
+            JOIN
+                states
+            ON
+                cities.state_id = states.id
+            WHERE
+                states.name LIKE BINARY %(state_name)s
+            ORDER BY
+                cities.id ASC
+        """, {
+            'state_name': argv[4]
+        })
+        rows_selected = db_cursor.fetchall()
 
+    if rows_selected is not None:
+        print(", ".join([row[1] for row in rows_selected]))

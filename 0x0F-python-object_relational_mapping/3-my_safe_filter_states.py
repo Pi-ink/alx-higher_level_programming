@@ -1,23 +1,30 @@
 #!/usr/bin/python3
-"""Module that lists all states from the hbtn_0e_0_usa database."""
+"""
+This script takes in an argument and
+displays all values in the states
+where `name` matches the argument
+from the database `hbtn_0e_0_usa`.
+This time the script is safe from
+MySQL injections!
+"""
 
-import sys
-import MySQLdb
+import MySQLdb as db
+from sys import argv
 
 if __name__ == "__main__":
-    # Get MySQL credentials and search name from command-line arguments
-    db = MySQLdb.connect(user=sys.argv[1], passwd=sys.argv[2], db=sys.argv[3])
+    """
+    Access to the database and get the states
+    from the database.
+    """
+    db_connect = db.connect(host="localhost", port=3306,
+                            user=argv[1], passwd=argv[2], db=argv[3])
 
-    # Connect to MySQL server
-    c = db.cursor()
+    db_cursor = db_connect.cursor()
+    db_cursor.execute(
+        "SELECT * FROM states WHERE name LIKE \
+                    BINARY %(name)s ORDER BY states.id ASC", {'name': argv[4]})
 
-    # Execute the SQL query to retrieve all states
-    c.execute("SELECT `c`.`id`, `c`.`name`, `s`.`name` \
-                 FROM `cities` as `c` \
-                INNER JOIN `states` as `s` \
-                   ON `c`.`state_id` = `s`.`id` \
-                ORDER BY `c`.`id`")
+    rows_selected = db_cursor.fetchall()
 
-    # Fetch all rows and print the states
-    [print(city) for city in c.fetchall()]
-
+    for row in rows_selected:
+        print(row)
